@@ -30,6 +30,11 @@ builder.Services.AddDbContext<AppDbContext>(o =>
 {
     var stringcn = builder.Configuration.GetConnectionString("Supabase");
 
+    if (string.IsNullOrWhiteSpace(stringcn))
+    {
+        throw new InvalidOperationException("ConnectionStrings:Supabase no está configurado. Crea el archivo .env con las credenciales de Supabase.");
+    }
+
     o.UseNpgsql(stringcn);
 });
 
@@ -47,8 +52,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
             ValidAudience = builder.Configuration["JwtSettings:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]
-                                       ?? throw new InvalidOperationException("SecretKey no encontrado")))
+                Encoding.UTF8.GetBytes(
+                    !string.IsNullOrWhiteSpace(builder.Configuration["JwtSettings:SecretKey"])
+                        ? builder.Configuration["JwtSettings:SecretKey"]!
+                        : throw new InvalidOperationException("JwtSettings:SecretKey no está configurado. Revisa el archivo .env.")))
         };
     });
 
